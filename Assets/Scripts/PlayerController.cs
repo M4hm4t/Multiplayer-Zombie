@@ -8,6 +8,7 @@ using Photon.Pun;
 
 public class PlayerController : MonoBehaviour
 {
+ 
     private PhotonView _view;
     #region Private Members
 
@@ -57,10 +58,12 @@ public class PlayerController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        Inventory=FindObjectOfType<Inventory>();
+        Hud=FindObjectOfType<HUD>();
         _animator = GetComponent<Animator>();
         _characterController = GetComponent<CharacterController>();
         Inventory.ItemUsed += Inventory_ItemUsed;
-        Inventory.ItemRemoved += Inventory_ItemRemoved;
+       Inventory.ItemRemoved += Inventory_ItemRemoved;
 
         mHealthBar = Hud.transform.Find("Bars_Panel/HealthBar").GetComponent<HealthBar>();
         mHealthBar.Min = 0;
@@ -75,6 +78,7 @@ public class PlayerController : MonoBehaviour
         mFoodBar.SetValue(Food);
 
         InvokeRepeating("IncreaseHunger", 0, HungerRate);
+      
     }
 
 
@@ -192,7 +196,7 @@ public class PlayerController : MonoBehaviour
     public int Food = 100;
 
     [Tooltip("Rate in seconds in which the hunger increases")]
-    public float HungerRate = 0.5f;
+    public float HungerRate = 0f;
 
     public void IncreaseHunger()
     {
