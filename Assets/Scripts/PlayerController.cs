@@ -5,484 +5,224 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using Photon.Pun;
+using Code;
 
-public class PlayerController : MonoBehaviour
+namespace Code
 {
- 
-    private PhotonView _view;
-    #region Private Members
-
-    private Animator _animator;
-
-    private CharacterController _characterController;
-
-    private float Gravity = 20.0f;
-
-    private Vector3 _moveDirection = Vector3.zero;
-
-    private InventoryItemBase mCurrentItem = null;
-
-    private HealthBar mHealthBar;
-
-    private HealthBar mFoodBar;
-
-    private int startHealth;
-
-    private int startFood;
-
-    private bool mCanTakeDamage = true;
-
-    #endregion
-
-    #region Public Members
-
-    public float Speed = 5.0f;
-
-    public float RotationSpeed = 240.0f;
-
-    public Inventory Inventory;
-
-    public GameObject Hand;
-
-    public HUD Hud;
-
-    public float JumpSpeed = 7.0f;
-
-    public event EventHandler PlayerDied;
-
-
-    #endregion
-
-    public UnityEvent QuestCompleted;
-
-    // Use this for initialization
-    void Start()
+	public class PlayerController : MyCharacterController
     {
-        Inventory=FindObjectOfType<Inventory>();
-        Hud=FindObjectOfType<HUD>();
-        _animator = GetComponent<Animator>();
-        _characterController = GetComponent<CharacterController>();
-        Inventory.ItemUsed += Inventory_ItemUsed;
-       Inventory.ItemRemoved += Inventory_ItemRemoved;
+        public static PlayerController Instance { get; private set; }
 
-        mHealthBar = Hud.transform.Find("Bars_Panel/HealthBar").GetComponent<HealthBar>();
-        mHealthBar.Min = 0;
-        mHealthBar.Max = Health;
-        startHealth = Health;
-        mHealthBar.SetValue(Health);
+        [SerializeField] private ScreenTouchController input;
+        [SerializeField] private ShootController shootController;
 
-        mFoodBar = Hud.transform.Find("Bars_Panel/FoodBar").GetComponent<HealthBar>();
-        mFoodBar.Min = 0;
-        mFoodBar.Max = Food;
-        startFood = Food;
-        mFoodBar.SetValue(Food);
+        private readonly List<Transform> _enemies = new();
+        private bool _isShooting;
+        MyCharacterController moving;
 
-        InvokeRepeating("IncreaseHunger", 0, HungerRate);
-      
-    }
-
-
-    #region Inventory
-
-    private void Inventory_ItemRemoved(object sender, InventoryEventArgs e)
-    {
-        InventoryItemBase item = e.Item;
-
-        GameObject goItem = (item as MonoBehaviour).gameObject;
-        goItem.SetActive(true);
-        goItem.transform.parent = null;
-
-        if (item == mCurrentItem)
-            mCurrentItem = null;
-
-    }
-
-    private void SetItemActive(InventoryItemBase item, bool active)
-    {
-        GameObject currentItem = (item as MonoBehaviour).gameObject;
-        currentItem.SetActive(active);
-        currentItem.transform.parent = active ? Hand.transform : null;
-    }
-
-
-    private void Inventory_ItemUsed(object sender, InventoryEventArgs e)
-    {
-        if (e.Item.ItemType != EItemType.Consumable)
+        private void Awake()
         {
-            // If the player carries an item, un-use it (remove from player's hand)
-            if (mCurrentItem != null)
+            Instance = this;
+        }
+
+
+        public PhotonView _view;
+        #region Private Members
+        private Animator _animator;
+        private CharacterController _characterController;
+        private float Gravity = 20.0f;
+        private Vector3 _moveDirection = Vector3.zero;
+        #endregion
+        #region Public Members
+        public float Speed = 5.0f;
+        public float RotationSpeed = 240.0f;
+        public GameObject Hand;
+        public float JumpSpeed = 7.0f;
+        #endregion
+
+        // Use this for initialization
+        void Start()
+        {
+            input = FindObjectOfType<ScreenTouchController>();
+            _animator = GetComponent<Animator>();
+            _characterController = GetComponent<CharacterController>();
+
+        }
+        [SerializeField]
+        private bool mIsControlEnabled = true;
+
+        public void EnableControl()
+        {
+            mIsControlEnabled = true;
+        }
+
+        public void DisableControl()
+        {
+            mIsControlEnabled = false;
+        }
+
+        private Vector3 mExternalMovement = Vector3.zero;
+
+        public Vector3 ExternalMovement
+        {
+            set
             {
-                SetItemActive(mCurrentItem, false);
-            }
-
-            InventoryItemBase item = e.Item;
-
-            // Use item (put it to hand of the player)
-            SetItemActive(item, true);
-
-            mCurrentItem = e.Item;
-        }
-
-    }
-
-    private int Attack_1_Hash = Animator.StringToHash("Base Layer.Attack_1");
-
-    public bool IsAttacking
-    {
-        get
-        {
-            AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
-            if (stateInfo.fullPathHash == Attack_1_Hash)
-            {
-                return true;
-            }
-            return false;
-        }
-    }
-
-    public void DropCurrentItem()
-    {
-        mCanTakeDamage = false;
-
-        _animator.SetTrigger("tr_drop");
-
-        GameObject goItem = (mCurrentItem as MonoBehaviour).gameObject;
-
-        Inventory.RemoveItem(mCurrentItem);
-
-        // Throw animation
-        Rigidbody rbItem = goItem.AddComponent<Rigidbody>();
-        if (rbItem != null)
-        {
-            rbItem.AddForce(transform.forward * 2.0f, ForceMode.Impulse);
-
-            Invoke("DoDropItem", 0.25f);
-        }
-    }
-
-    public void DropAndDestroyCurrentItem()
-    {
-        GameObject goItem = (mCurrentItem as MonoBehaviour).gameObject;
-
-        Inventory.RemoveItem(mCurrentItem);
-
-        Destroy(goItem);
-
-        mCurrentItem = null;
-    }
-
-    public void DoDropItem()
-    {
-        mCanTakeDamage = true;
-        if (mCurrentItem != null)
-        {
-            // Remove Rigidbody
-            Destroy((mCurrentItem as MonoBehaviour).GetComponent<Rigidbody>());
-
-            mCurrentItem = null;
-
-            mCanTakeDamage = true;
-        }
-    }
-
-    #endregion
-
-    #region Health & Hunger
-
-    [Tooltip("Amount of health")]
-    public int Health = 100;
-
-    [Tooltip("Amount of food")]
-    public int Food = 100;
-
-    [Tooltip("Rate in seconds in which the hunger increases")]
-    public float HungerRate = 0f;
-
-    public void IncreaseHunger()
-    {
-        Food--;
-        if (Food < 0)
-            Food = 0;
-
-        mFoodBar.SetValue(Food);
-
-        if (Food == 0)
-        {
-            CancelInvoke();
-            Die();
-        }
-    }
-
-    public bool IsDead
-    {
-        get
-        {
-            return Health == 0 || Food == 0;
-        }
-    }
-
-    public bool CarriesItem(string itemName)
-    {
-        if (mCurrentItem == null)
-            return false;
-
-        return (mCurrentItem.Name == itemName);
-    }
-
-    public InventoryItemBase GetCurrentItem()
-    {
-        return mCurrentItem;
-    }
-
-    public bool IsArmed
-    {
-        get
-        {
-            if (mCurrentItem == null)
-                return false;
-
-            return mCurrentItem.ItemType == EItemType.Weapon;
-        }
-    }
-
-
-    public void Eat(int amount)
-    {
-        Food += amount;
-        if (Food > startFood)
-        {
-            Food = startFood;
-        }
-
-        mFoodBar.SetValue(Food);
-
-    }
-
-    public void Rehab(int amount)
-    {
-        Health += amount;
-        if (Health > startHealth)
-        {
-            Health = startHealth;
-        }
-
-        mHealthBar.SetValue(Health);
-    }
-
-    public void TakeDamage(int amount)
-    {
-        if (!mCanTakeDamage)
-            return;
-
-        Health -= amount;
-        if (Health < 0)
-            Health = 0;
-
-        mHealthBar.SetValue(Health);
-
-        if (IsDead)
-        {
-            Die();
-        }
-
-    }
-
-
-    private void Die()
-    {
-        _animator.SetTrigger("death");
-
-        if (PlayerDied != null)
-        {
-            PlayerDied(this, EventArgs.Empty);
-        }
-    }
-
-    #endregion
-
-
-    public void Talk()
-    {
-        _animator.SetTrigger("tr_talk");
-    }
-
-    private bool mIsControlEnabled = true;
-
-    public void EnableControl()
-    {
-        mIsControlEnabled = true;
-    }
-
-    public void DisableControl()
-    {
-        mIsControlEnabled = false;
-    }
-
-    private Vector3 mExternalMovement = Vector3.zero;
-
-    public Vector3 ExternalMovement
-    {
-        set
-        {
-            mExternalMovement = value;
-        }
-    }
-
-    void FixedUpdate()
-    {
-        if (!IsDead)
-        {
-            // Drop item
-            if (mCurrentItem != null && Input.GetKeyDown(KeyCode.R))
-            {
-                DropCurrentItem();
+                mExternalMovement = value;
             }
         }
-    }
 
-    void LateUpdate()
-    {
-        if (mExternalMovement != Vector3.zero && _view.IsMine)
+        void LateUpdate()
         {
-            _characterController.Move(mExternalMovement);
-        }
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (!IsDead && mIsControlEnabled)
-        {
-            // Interact with the item
-            if (mInteractItem != null && Input.GetKeyDown(KeyCode.F))
+            if (mExternalMovement != Vector3.zero)
             {
-                // Interact animation
-                mInteractItem.OnInteractAnimation(_animator);
+                _characterController.Move(mExternalMovement);
             }
+        }
 
-            // Execute action with item
-            if (mCurrentItem != null && Input.GetMouseButtonDown(0))
+        // Update is called once per frame
+        void Update()
+        {
+            if (_enemies.Count > 0)
+                transform.LookAt(_enemies[0]);
+
+            if (mIsControlEnabled && _view.IsMine)
             {
-                // Dont execute click if mouse pointer is over uGUI element
-                if (!EventSystem.current.IsPointerOverGameObject())
+
+                // Get Input for axis
+                float h = Input.GetAxis("Horizontal");
+                float v = Input.GetAxis("Vertical");
+                if (h==0)
                 {
-                    // TODO: Logic which action to execute has to come from the particular item
-                    _animator.SetTrigger("attack_1");
+                    h = input.Direction.x;
+                } if (v==0)
+                {
+                    v = input.Direction.y;
                 }
-            }
+               
+                
+                // Calculate the forward vector
+                Vector3 camForward_Dir = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
+                Vector3 move = v * camForward_Dir + h * Camera.main.transform.right;
 
-            // Get Input for axis
-            float h = Input.GetAxis("Horizontal");
-            float v = Input.GetAxis("Vertical");
-
-            // Calculate the forward vector
-            Vector3 camForward_Dir = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
-            Vector3 move = v * camForward_Dir + h * Camera.main.transform.right;
-
-            if (move.magnitude > 1f) move.Normalize();
+                if (move.magnitude > 1f) move.Normalize();
 
 
-            // Calculate the rotation for the player
-            move = transform.InverseTransformDirection(move);
+                // Calculate the rotation for the player
+                move = transform.InverseTransformDirection(move);
 
-            // Get Euler angles
-            float turnAmount = Mathf.Atan2(move.x, move.z);
+                // Get Euler angles
+                float turnAmount = Mathf.Atan2(move.x, move.z);
 
-            transform.Rotate(0, turnAmount * RotationSpeed * Time.deltaTime, 0);
+                transform.Rotate(0, turnAmount * RotationSpeed * Time.deltaTime, 0);
 
-            if (_characterController.isGrounded || mExternalMovement != Vector3.zero)
-            {
-                _moveDirection = transform.forward * move.magnitude;
-
-                _moveDirection *= Speed;
-
-                if (Input.GetButton("Jump"))
+                if (_characterController.isGrounded || mExternalMovement != Vector3.zero)
                 {
-                    _animator.SetBool("is_in_air", true);
-                    _moveDirection.y = JumpSpeed;
+                    _moveDirection = transform.forward * move.magnitude;
 
+                    _moveDirection *= Speed;
+
+                    if (Input.GetButton("Jump"))
+                    {
+                        _animator.SetBool("is_in_air", true);
+                        _moveDirection.y = JumpSpeed;
+
+                    }
+                    else
+                    {
+                        _animator.SetBool("is_in_air", false);
+                        _animator.SetBool("run", move.magnitude > 0);
+                    }
                 }
                 else
                 {
-                    _animator.SetBool("is_in_air", false);
-                    _animator.SetBool("run", move.magnitude > 0);
+                    Gravity = 20.0f;
                 }
+
+
+                _moveDirection.y -= Gravity * Time.deltaTime;
+
+                _characterController.Move(_moveDirection * Time.deltaTime);
             }
-            else
-            {
-                Gravity = 20.0f;
-            }
-
-
-            _moveDirection.y -= Gravity * Time.deltaTime;
-
-            _characterController.Move(_moveDirection * Time.deltaTime);
         }
-    }
 
-    public void InteractWithItem()
-    {
-        if (mInteractItem != null)
+        private void FixedUpdate()
         {
-            mInteractItem.OnInteract();
-
-            if (mInteractItem is InventoryItemBase)
+            var direction = new Vector3(input.Direction.x, 0, input.Direction.y);
+            Move(direction);
+        }
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision.transform.CompareTag($"Enemy"))
             {
-                InventoryItemBase inventoryItem = mInteractItem as InventoryItemBase;
-                Inventory.AddItem(inventoryItem);
-                inventoryItem.OnPickup();
+                Dead();
+            }
+        }
 
-                if (inventoryItem.UseItemAfterPickup)
+        private void OnTriggerEnter(Collider other)
+        {
+            if (other.CompareTag($"FinishPoint"))
+            {
+                OnReachSavePoint();
+            }
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (other.transform.CompareTag($"Enemy"))
+            {
+                if (!_enemies.Contains(other.transform))
+                    _enemies.Add(other.transform);
+
+                AutoShoot();
+            }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.transform.CompareTag($"Enemy"))
+            {
+                _enemies.Remove(other.transform);
+            }
+        }
+
+        private void AutoShoot()
+        {
+            IEnumerator Do()
+            {
+                while (_enemies.Count > 0)
                 {
-                    Inventory.UseItem(inventoryItem);
+                    var enemy = _enemies[0];
+                    var myTransform = transform;
+                    var position = myTransform.position;
+                    var direction = enemy.transform.position - position;
+                    direction.y = 0;
+                    direction = direction.normalized;
+                    shootController.Shoot(direction, position);
+                    _enemies.RemoveAt(0);
+                    yield return new WaitForSeconds(shootController.Delay);
                 }
-                Hud.CloseMessagePanel();
-                mInteractItem = null;
+
+                _isShooting = false;
             }
-            //else
-            //{
-            //    if (mInteractItem.ContinueInteract())
-            //    {
-            //        Hud.OpenMessagePanel(mInteractItem);
-            //    }
-            //    else
-            //    {
-            //        Hud.CloseMessagePanel();
-            //        mInteractItem = null;
-            //    }
-            //}
-        }
-    }
 
-    private InteractableItemBase mInteractItem = null;
-
-    private void OnTriggerEnter(Collider other)
-    {
-        TryInteraction(other);
-    }
-
-    private void TryInteraction(Collider other)
-    {
-        InteractableItemBase item = other.GetComponent<InteractableItemBase>();
-
-        if (item != null)
-        {
-            if (item.CanInteract(other))
+            if (!_isShooting)
             {
-                mInteractItem = item;
-
-                Hud.OpenMessagePanel(mInteractItem);
+                _isShooting = true;
+                StartCoroutine(Do());
             }
         }
-    }
 
-    private void OnTriggerExit(Collider other)
-    {
-        InteractableItemBase item = other.GetComponent<InteractableItemBase>();
-        if (item != null)
+        private void Dead()
         {
-            Hud.CloseMessagePanel();
-            mInteractItem = null;
+            GameManager.Instance.GameOver();
         }
+
+        private void OnReachSavePoint()
+        {
+            GameManager.Instance.Win();
+        }
+
+
+
     }
 }
