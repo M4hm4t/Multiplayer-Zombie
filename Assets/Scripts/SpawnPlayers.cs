@@ -22,7 +22,7 @@ public class SpawnPlayers : MonoBehaviourPunCallbacks
     void SpawnPlayer()
     {
         GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, spawnPoint.position, spawnPoint.rotation);
-        playerFollow.SetCameraTarget(player.transform);
+       // playerFollow.SetCameraTarget(player.transform);
     }
 
     // Update is called once per frame

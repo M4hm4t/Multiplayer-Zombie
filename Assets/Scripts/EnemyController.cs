@@ -1,6 +1,8 @@
 using System;
 using Unity.VisualScripting;
 using UnityEngine;
+using Photon.Pun;
+using Code;
 
 namespace Code
 {
@@ -10,6 +12,7 @@ namespace Code
 
 		private void Start()
 		{
+			
 			GameManager.Instance.EnemyAmount++;
 		}
 

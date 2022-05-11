@@ -28,4 +28,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         Debug.Log("Odaya girildi");
         PhotonNetwork.LoadLevel("Game");
     }
+
+    public void QuickBtn()
+    {
+        PhotonNetwork.JoinRandomOrCreateRoom();
+    }
 }

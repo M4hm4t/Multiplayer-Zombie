@@ -26,6 +26,7 @@ public class PlayerFollow : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        
         //_cameraOffset = transform.position - PlayerTransform.position;
     }
 
@@ -49,6 +50,11 @@ public class PlayerFollow : MonoBehaviour
     // LateUpdate is called after Update methods
     void LateUpdate()
     {
+        if (PlayerTransform==null)
+        {
+            return;
+
+        }
         if (IsRotateActive)
         {
 

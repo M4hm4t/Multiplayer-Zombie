@@ -9,16 +9,16 @@ using Code;
 
 namespace Code
 {
-	public class PlayerController : MyCharacterController
+    public class PlayerController : MyCharacterController
     {
         public static PlayerController Instance { get; private set; }
 
         [SerializeField] private ScreenTouchController input;
         [SerializeField] private ShootController shootController;
-
+   
         private readonly List<Transform> _enemies = new();
         private bool _isShooting;
-        MyCharacterController moving;
+       
 
         private void Awake()
         {
@@ -28,7 +28,7 @@ namespace Code
 
         public PhotonView _view;
         #region Private Members
-        private Animator _animator;
+       // private Animator _animator;
         private CharacterController _characterController;
         private float Gravity = 20.0f;
         private Vector3 _moveDirection = Vector3.zero;
@@ -43,8 +43,12 @@ namespace Code
         // Use this for initialization
         void Start()
         {
+            if (_view.IsMine)
+            {
+                FindObjectOfType<PlayerFollow>().SetCameraTarget(transform); //player finds the camera
+            }
             input = FindObjectOfType<ScreenTouchController>();
-            _animator = GetComponent<Animator>();
+           // _animator = GetComponent<Animator>();
             _characterController = GetComponent<CharacterController>();
 
         }
@@ -82,8 +86,8 @@ namespace Code
         // Update is called once per frame
         void Update()
         {
-            if (_enemies.Count > 0)
-                transform.LookAt(_enemies[0]);
+            //if (_enemies.Count > 0)
+              //  transform.LookAt(_enemies[0]);
 
             if (mIsControlEnabled && _view.IsMine)
             {
@@ -91,18 +95,19 @@ namespace Code
                 // Get Input for axis
                 float h = Input.GetAxis("Horizontal");
                 float v = Input.GetAxis("Vertical");
-                if (h==0)
+                if (h == 0)
                 {
                     h = input.Direction.x;
-                } if (v==0)
+                }
+                if (v == 0)
                 {
                     v = input.Direction.y;
                 }
-               
-                
+
+
                 // Calculate the forward vector
-                Vector3 camForward_Dir = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
-                Vector3 move = v * camForward_Dir + h * Camera.main.transform.right;
+               Vector3 camForward_Dir = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
+               Vector3 move = v * camForward_Dir + h * Camera.main.transform.right;
 
                 if (move.magnitude > 1f) move.Normalize();
 
@@ -123,14 +128,14 @@ namespace Code
 
                     if (Input.GetButton("Jump"))
                     {
-                        _animator.SetBool("is_in_air", true);
+                       // _animator.SetBool("is_in_air", true);
                         _moveDirection.y = JumpSpeed;
 
                     }
                     else
                     {
-                        _animator.SetBool("is_in_air", false);
-                        _animator.SetBool("run", move.magnitude > 0);
+                       // _animator.SetBool("is_in_air", false);
+                        //_animator.SetBool("run", move.magnitude > 0);
                     }
                 }
                 else
@@ -193,7 +198,7 @@ namespace Code
                 {
                     var enemy = _enemies[0];
                     var myTransform = transform;
-                    var position = myTransform.position;
+                    var position = myTransform.position+Vector3.up;
                     var direction = enemy.transform.position - position;
                     direction.y = 0;
                     direction = direction.normalized;

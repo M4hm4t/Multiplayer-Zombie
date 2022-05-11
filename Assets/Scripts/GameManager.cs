@@ -63,7 +63,7 @@ namespace Code
         public void Win()
         {
             Debug.Log("Win");
-            Time.timeScale = 0;
+            Time.timeScale = 1;
             var current = FindObjectsOfType<EnemyController>().Length;
             var result = current / (float)EnemyAmount;
             var success = Mathf.Lerp(100, 0, result);
