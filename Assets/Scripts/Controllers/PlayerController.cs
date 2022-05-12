@@ -18,6 +18,7 @@ namespace Code
    
         private readonly List<Transform> _enemies = new();
         private bool _isShooting;
+        public bool isDead;
        
 
         private void Awake()
@@ -46,6 +47,7 @@ namespace Code
             if (_view.IsMine)
             {
                 FindObjectOfType<PlayerFollow>().SetCameraTarget(transform); //player finds the camera
+                FindObjectOfType<SkillController>().SetPlayer(this); //Skill finds the player
             }
             input = FindObjectOfType<ScreenTouchController>();
            // _animator = GetComponent<Animator>();
@@ -89,7 +91,7 @@ namespace Code
             //if (_enemies.Count > 0)
               //  transform.LookAt(_enemies[0]);
 
-            if (mIsControlEnabled && _view.IsMine)
+            if (mIsControlEnabled && _view.IsMine &&!isDead)
             {
 
                 // Get Input for axis
@@ -157,10 +159,14 @@ namespace Code
         }
         private void OnCollisionEnter(Collision collision)
         {
-            if (collision.transform.CompareTag($"Enemy"))
+            if (_view.IsMine)
             {
-                Dead();
+                if (collision.transform.CompareTag($"Enemy"))
+                {
+                    Dead();
+                }
             }
+            
         }
 
         private void OnTriggerEnter(Collider other)
@@ -202,7 +208,10 @@ namespace Code
                     var direction = enemy.transform.position - position;
                     direction.y = 0;
                     direction = direction.normalized;
+                    if (!isDead)
+                    {
                     shootController.Shoot(direction, position);
+                    }
                     _enemies.RemoveAt(0);
                     yield return new WaitForSeconds(shootController.Delay);
                 }
@@ -219,9 +228,18 @@ namespace Code
 
         private void Dead()
         {
+            if (_view.IsMine)
+            {
+                _view.RPC("SetDead", RpcTarget.All);
+            }
+        }
+       [PunRPC]
+        public void SetDead()
+        {
+            PhotonNetwork.LeaveRoom();
+            isDead = true;
             GameManager.Instance.GameOver();
         }
-
         private void OnReachSavePoint()
         {
             GameManager.Instance.Win();

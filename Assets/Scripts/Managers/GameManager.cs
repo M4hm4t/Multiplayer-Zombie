@@ -3,10 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using TMPro;
 namespace Code
 {
     public class GameManager : MonoBehaviour
     {
+        [SerializeField] private TextMeshProUGUI _enemyKillsText;
 
         public static GameManager Instance = null;
         public int EnemyAmount { get; set; }
@@ -17,7 +19,7 @@ namespace Code
             set
             {
                 _enemyDeadCounter = value;
-                barController.Display(SuccessValue);
+                MatchManager.Instance.SetDisplay(SuccessValue);
             }
         }
 
@@ -46,19 +48,25 @@ namespace Code
 
 
         }
+        public void EnemyKilled(int enemyKillCount)
+        {
+
+            _enemyKillsText.text = "kills: " + enemyKillCount;
+        }
 
         public PlayerController Player;
         private IEnumerator Start()
         {
             yield return new WaitForSeconds(.2f);
-            barController.Display(SuccessValue);
+            MatchManager.Instance.SetDisplay(SuccessValue);
         }
 
         public void GameOver()
         {
             Debug.Log("Game Over");
-            Time.timeScale = 1;
+            //Time.timeScale = 0;
         }
+
 
         public void Win()
         {
@@ -69,5 +77,10 @@ namespace Code
             var success = Mathf.Lerp(100, 0, result);
         }
 
+        public void SetEnemyKillText(TextMeshProUGUI text)
+        {
+
+            _enemyKillsText = text;
+        }
     }
 }
