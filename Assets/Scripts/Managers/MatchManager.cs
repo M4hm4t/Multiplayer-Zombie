@@ -10,6 +10,9 @@ public class MatchManager : MonoBehaviourPunCallbacks
 {
     private static MatchManager instance;
     private int _enemyKillCount;
+    private Player masterClientPlayer;
+  
+
     public static MatchManager Instance
     {
         get
@@ -28,7 +31,9 @@ public class MatchManager : MonoBehaviourPunCallbacks
         }
     } //singelton
 
-   
+
+  
+
     [PunRPC]
     public void Display(float normalized)
     {
@@ -44,7 +49,8 @@ public class MatchManager : MonoBehaviourPunCallbacks
 
     public override void OnLeftRoom()
     {
-        SceneManager.LoadScene("Lobby");
+        
+       SceneManager.LoadScene("Lobby");
     }
 
     

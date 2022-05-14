@@ -6,30 +6,30 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using Photon.Pun;
 using Code;
+using System.Linq;
 
 namespace Code
 {
     public class PlayerController : MyCharacterController
     {
         public static PlayerController Instance { get; private set; }
-
+        public float checkRadius;
+        public LayerMask checkLayers;
         [SerializeField] private ScreenTouchController input;
         [SerializeField] private ShootController shootController;
-   
+
         private readonly List<Transform> _enemies = new();
         private bool _isShooting;
         public bool isDead;
-       
+        Collider targetEnemy;
 
         private void Awake()
         {
             Instance = this;
         }
-
-
         public PhotonView _view;
         #region Private Members
-       // private Animator _animator;
+        // private Animator _animator;
         private CharacterController _characterController;
         private float Gravity = 20.0f;
         private Vector3 _moveDirection = Vector3.zero;
@@ -44,13 +44,14 @@ namespace Code
         // Use this for initialization
         void Start()
         {
+            
             if (_view.IsMine)
             {
                 FindObjectOfType<PlayerFollow>().SetCameraTarget(transform); //player finds the camera
                 FindObjectOfType<SkillController>().SetPlayer(this); //Skill finds the player
             }
             input = FindObjectOfType<ScreenTouchController>();
-           // _animator = GetComponent<Animator>();
+            // _animator = GetComponent<Animator>();
             _characterController = GetComponent<CharacterController>();
 
         }
@@ -88,10 +89,9 @@ namespace Code
         // Update is called once per frame
         void Update()
         {
-            //if (_enemies.Count > 0)
-              //  transform.LookAt(_enemies[0]);
+           
 
-            if (mIsControlEnabled && _view.IsMine &&!isDead)
+            if (mIsControlEnabled && _view.IsMine && !isDead)
             {
 
                 // Get Input for axis
@@ -106,10 +106,9 @@ namespace Code
                     v = input.Direction.y;
                 }
 
-
                 // Calculate the forward vector
-               Vector3 camForward_Dir = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
-               Vector3 move = v * camForward_Dir + h * Camera.main.transform.right;
+                Vector3 camForward_Dir = Vector3.Scale(Camera.main.transform.forward, new Vector3(1, 0, 1)).normalized;
+                Vector3 move = v * camForward_Dir + h * Camera.main.transform.right;
 
                 if (move.magnitude > 1f) move.Normalize();
 
@@ -119,8 +118,10 @@ namespace Code
 
                 // Get Euler angles
                 float turnAmount = Mathf.Atan2(move.x, move.z);
-
-                transform.Rotate(0, turnAmount * RotationSpeed * Time.deltaTime, 0);
+                if (v != 0 && h != 0)
+                {
+                    transform.Rotate(0, turnAmount * RotationSpeed * Time.deltaTime, 0);
+                }
 
                 if (_characterController.isGrounded || mExternalMovement != Vector3.zero)
                 {
@@ -130,13 +131,13 @@ namespace Code
 
                     if (Input.GetButton("Jump"))
                     {
-                       // _animator.SetBool("is_in_air", true);
+                        // _animator.SetBool("is_in_air", true);
                         _moveDirection.y = JumpSpeed;
 
                     }
                     else
                     {
-                       // _animator.SetBool("is_in_air", false);
+                        // _animator.SetBool("is_in_air", false);
                         //_animator.SetBool("run", move.magnitude > 0);
                     }
                 }
@@ -144,19 +145,53 @@ namespace Code
                 {
                     Gravity = 20.0f;
                 }
-
-
                 _moveDirection.y -= Gravity * Time.deltaTime;
-
                 _characterController.Move(_moveDirection * Time.deltaTime);
-            }
+
+
+                if (h == 0 && v == 0)
+                {
+
+                    Collider[] colliders = Physics.OverlapSphere(transform.position, checkRadius, checkLayers);
+                    Array.Sort(colliders, new DistanceComparer(transform));
+                    foreach (Collider item in colliders)
+                    {
+                        Debug.Log(item.name);
+
+
+                       targetEnemy = item;
+                        float speed = 40f;
+                        var look = targetEnemy.transform.position - transform.position;
+                        look.y = 0;
+                        var targetrotation = Quaternion.LookRotation(targetEnemy.transform.position);
+                        transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
+
+
+
+                        //transform.LookAt(item.transform.position);
+
+                    }
+
+                    //targetEnemy = _enemies[0];
+                    //float speed = 30f;
+                    //var look = targetEnemy.position - transform.position;
+                    //look.y = 0;
+                    //var targetrotation = Quaternion.LookRotation(look);
+                    //transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
+
+                    ////    //targetEnemy = _enemies[0];
+                    ////    //float speed = 30f;
+                    ////    //var look = targetEnemy.position - transform.position;
+                    ////    //look.y = 0;
+                    ////    //var targetrotation = Quaternion.LookRotation(look);
+                    ////    //transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
+
+                   // transform.LookAt(_enemies[0]);
+                }
+
+        }
         }
 
-        private void FixedUpdate()
-        {
-            var direction = new Vector3(input.Direction.x, 0, input.Direction.y);
-            Move(direction);
-        }
         private void OnCollisionEnter(Collision collision)
         {
             if (_view.IsMine)
@@ -166,9 +201,7 @@ namespace Code
                     Dead();
                 }
             }
-            
         }
-
         private void OnTriggerEnter(Collider other)
         {
             if (other.CompareTag($"FinishPoint"))
@@ -183,11 +216,10 @@ namespace Code
             {
                 if (!_enemies.Contains(other.transform))
                     _enemies.Add(other.transform);
-
+                // HitEnemies();
                 AutoShoot();
             }
         }
-
         private void OnTriggerExit(Collider other)
         {
             if (other.transform.CompareTag($"Enemy"))
@@ -202,16 +234,31 @@ namespace Code
             {
                 while (_enemies.Count > 0)
                 {
-                    var enemy = _enemies[0];
-                    var myTransform = transform;
-                    var position = myTransform.position+Vector3.up;
-                    var direction = enemy.transform.position - position;
-                    direction.y = 0;
-                    direction = direction.normalized;
-                    if (!isDead)
+                    var hits = Physics.RaycastAll(transform.position, transform.forward, 20f);
+
+                    foreach (var hit in hits)
                     {
-                    shootController.Shoot(direction, position);
+                        if (hit.collider.tag == "Enemy")
+                        {
+                            var myTransform = transform;
+                            var position = myTransform.position + Vector3.up;
+                            if (!isDead)
+                            {
+                                shootController.Shoot(transform.forward, position);
+
+                            }
+                        }
                     }
+                    //var enemy = _enemies[0];
+                    //var myTransform = transform;
+                    //var position = myTransform.position + Vector3.up;
+                    //var direction = enemy.transform.position - position;
+                    //direction.y = 0;
+                    //direction = direction.normalized;
+                    //if (!isDead)
+                    //{
+                    //    shootController.Shoot(direction, position);
+                    //}
                     _enemies.RemoveAt(0);
                     yield return new WaitForSeconds(shootController.Delay);
                 }
@@ -233,7 +280,7 @@ namespace Code
                 _view.RPC("SetDead", RpcTarget.All);
             }
         }
-       [PunRPC]
+        [PunRPC]
         public void SetDead()
         {
             PhotonNetwork.LeaveRoom();
@@ -244,8 +291,9 @@ namespace Code
         {
             GameManager.Instance.Win();
         }
-
-
-
+        private void OnDrawGizmos()
+        {
+            Gizmos.DrawWireSphere(transform.position, checkRadius);
+        }
     }
 }
