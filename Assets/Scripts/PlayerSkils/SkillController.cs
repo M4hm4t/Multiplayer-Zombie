@@ -11,9 +11,18 @@ public class SkillController : MonoBehaviour
     {
         this.controller = controller;
     }
+
+    //public void SetPlayerShield(PlayerController controller)
+    //{
+    //    this.controller = controller;
+    //}
     public void DashBtn()
     {
         controller.GetComponent<Dash>().DashSkill();
+    }
+    public void ShildBtn()
+    {
+        controller.GetComponent<Shield>().ShieldSkill();
     }
    
 }

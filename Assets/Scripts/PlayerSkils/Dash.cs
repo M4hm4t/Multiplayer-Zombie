@@ -14,8 +14,8 @@ public class Dash : MonoBehaviour
     CharacterController controller;
     public bool canDash = true;
     public bool isDashing = false;
-   
-    
+    public Transform PlayerTransform;
+
 
 
 
@@ -65,4 +65,6 @@ public class Dash : MonoBehaviour
         }
 
     }
+
+   
 }

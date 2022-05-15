@@ -16,12 +16,15 @@ namespace Code
         public float checkRadius;
         public LayerMask checkLayers;
         [SerializeField] private ScreenTouchController input;
+       // [SerializeField] private Shield shield;
         [SerializeField] private ShootController shootController;
 
         private readonly List<Transform> _enemies = new();
         private bool _isShooting;
         public bool isDead;
         Collider targetEnemy;
+
+
 
         private void Awake()
         {
@@ -44,13 +47,22 @@ namespace Code
         // Use this for initialization
         void Start()
         {
-            
+
+            //GameObject[] allChidren = this.gameObject.GetComponentsInChildren<GameObject>();
+            //foreach (GameObject t in allChidren)
+            //{
+            //    allChidren[4] = FindObjectOfType<Shield>();
+            //}
             if (_view.IsMine)
             {
+                FindObjectOfType<Shield>().SetShield(gameObject);
                 FindObjectOfType<PlayerFollow>().SetCameraTarget(transform); //player finds the camera
                 FindObjectOfType<SkillController>().SetPlayer(this); //Skill finds the player
+ 
             }
             input = FindObjectOfType<ScreenTouchController>();
+           // shield = FindObjectOfType<Shield>();
+
             // _animator = GetComponent<Animator>();
             _characterController = GetComponent<CharacterController>();
 
@@ -89,7 +101,7 @@ namespace Code
         // Update is called once per frame
         void Update()
         {
-           
+
 
             if (mIsControlEnabled && _view.IsMine && !isDead)
             {
@@ -159,37 +171,20 @@ namespace Code
                         Debug.Log(item.name);
 
 
-                       targetEnemy = item;
-                        float speed = 40f;
-                        var look = targetEnemy.transform.position - transform.position;
-                        look.y = 0;
-                        var targetrotation = Quaternion.LookRotation(targetEnemy.transform.position);
-                        transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
-
-
-
-                        //transform.LookAt(item.transform.position);
+                        //targetEnemy = item;
+                        // float speed = 100f;
+                        // var look = targetEnemy.transform.position - transform.position;
+                        // look.y = 0;
+                        // var targetrotation = Quaternion.LookRotation(targetEnemy.transform.position);
+                        // transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
+                        transform.LookAt(item.transform.position);
 
                     }
 
-                    //targetEnemy = _enemies[0];
-                    //float speed = 30f;
-                    //var look = targetEnemy.position - transform.position;
-                    //look.y = 0;
-                    //var targetrotation = Quaternion.LookRotation(look);
-                    //transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
 
-                    ////    //targetEnemy = _enemies[0];
-                    ////    //float speed = 30f;
-                    ////    //var look = targetEnemy.position - transform.position;
-                    ////    //look.y = 0;
-                    ////    //var targetrotation = Quaternion.LookRotation(look);
-                    ////    //transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
-
-                   // transform.LookAt(_enemies[0]);
                 }
 
-        }
+            }
         }
 
         private void OnCollisionEnter(Collision collision)
