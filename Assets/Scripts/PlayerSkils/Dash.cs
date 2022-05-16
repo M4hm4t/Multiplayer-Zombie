@@ -30,13 +30,6 @@ public class Dash : MonoBehaviour
         {
             DashSkill();
         }
-
-        //if (currentDashTime < maxDashTime)
-        //{
-        //    var moveDirection = transform.forward * dashDistance;
-        //    currentDashTime += dashStoppingSpeed;
-        //    controller.Move(moveDirection * Time.deltaTime * dashSpeed);
-        //}
         if (Vector3.Distance(transform.position,dashPos)>1 && isDashing)
         {
             

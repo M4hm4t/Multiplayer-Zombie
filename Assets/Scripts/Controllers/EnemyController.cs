@@ -53,12 +53,17 @@ namespace Code
 
             if (other.transform.CompareTag($"Bullet"))
             {
-                gameObject.SetActive(false);
-                other.gameObject.SetActive(false);
-                MatchManager.Instance.SetEnemyKill();
-                Instantiate(deadParticlePrefab, transform.position, Quaternion.identity);
-                GameManager.Instance.EnemyDeadCounter++;
+            other.gameObject.SetActive(false);
+                GetHit();
             }
+        }
+
+        public void GetHit()
+        {
+            gameObject.SetActive(false);
+            MatchManager.Instance.SetEnemyKill();
+            Instantiate(deadParticlePrefab, transform.position, Quaternion.identity);
+            GameManager.Instance.EnemyDeadCounter++;
         }
     }
 }

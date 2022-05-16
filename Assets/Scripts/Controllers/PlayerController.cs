@@ -13,13 +13,14 @@ namespace Code
     public class PlayerController : MyCharacterController
     {
         public static PlayerController Instance { get; private set; }
+        public Shield shield;
         public float checkRadius;
         public LayerMask checkLayers;
         [SerializeField] private ScreenTouchController input;
        // [SerializeField] private Shield shield;
         [SerializeField] private ShootController shootController;
 
-        private readonly List<Transform> _enemies = new();
+      public readonly List<Transform> _enemies = new();
         private bool _isShooting;
         public bool isDead;
         Collider targetEnemy;
@@ -32,7 +33,7 @@ namespace Code
         }
         public PhotonView _view;
         #region Private Members
-        // private Animator _animator;
+        private Animator _animator;
         private CharacterController _characterController;
         private float Gravity = 20.0f;
         private Vector3 _moveDirection = Vector3.zero;
@@ -47,7 +48,7 @@ namespace Code
         // Use this for initialization
         void Start()
         {
-
+           shield= GetComponent<Shield>();
             //GameObject[] allChidren = this.gameObject.GetComponentsInChildren<GameObject>();
             //foreach (GameObject t in allChidren)
             //{
@@ -55,7 +56,7 @@ namespace Code
             //}
             if (_view.IsMine)
             {
-                FindObjectOfType<Shield>().SetShield(gameObject);
+               
                 FindObjectOfType<PlayerFollow>().SetCameraTarget(transform); //player finds the camera
                 FindObjectOfType<SkillController>().SetPlayer(this); //Skill finds the player
  
@@ -63,7 +64,7 @@ namespace Code
             input = FindObjectOfType<ScreenTouchController>();
            // shield = FindObjectOfType<Shield>();
 
-            // _animator = GetComponent<Animator>();
+            _animator = GetComponent<Animator>();
             _characterController = GetComponent<CharacterController>();
 
         }
@@ -143,14 +144,14 @@ namespace Code
 
                     if (Input.GetButton("Jump"))
                     {
-                        // _animator.SetBool("is_in_air", true);
+                        _animator.SetBool("is_in_air", true);
                         _moveDirection.y = JumpSpeed;
 
                     }
                     else
                     {
-                        // _animator.SetBool("is_in_air", false);
-                        //_animator.SetBool("run", move.magnitude > 0);
+                         _animator.SetBool("is_in_air", false);
+                        _animator.SetBool("run", move.magnitude > 0);
                     }
                 }
                 else
@@ -168,9 +169,6 @@ namespace Code
                     Array.Sort(colliders, new DistanceComparer(transform));
                     foreach (Collider item in colliders)
                     {
-                        Debug.Log(item.name);
-
-
                         //targetEnemy = item;
                         // float speed = 100f;
                         // var look = targetEnemy.transform.position - transform.position;
@@ -193,7 +191,11 @@ namespace Code
             {
                 if (collision.transform.CompareTag($"Enemy"))
                 {
-                    Dead();
+                   
+                    if (!shield.isShield)
+                    {
+                        Dead();
+                    }                   
                 }
             }
         }
@@ -211,7 +213,6 @@ namespace Code
             {
                 if (!_enemies.Contains(other.transform))
                     _enemies.Add(other.transform);
-                // HitEnemies();
                 AutoShoot();
             }
         }
@@ -244,16 +245,7 @@ namespace Code
                             }
                         }
                     }
-                    //var enemy = _enemies[0];
-                    //var myTransform = transform;
-                    //var position = myTransform.position + Vector3.up;
-                    //var direction = enemy.transform.position - position;
-                    //direction.y = 0;
-                    //direction = direction.normalized;
-                    //if (!isDead)
-                    //{
-                    //    shootController.Shoot(direction, position);
-                    //}
+                    
                     _enemies.RemoveAt(0);
                     yield return new WaitForSeconds(shootController.Delay);
                 }
@@ -286,9 +278,6 @@ namespace Code
         {
             GameManager.Instance.Win();
         }
-        private void OnDrawGizmos()
-        {
-            Gizmos.DrawWireSphere(transform.position, checkRadius);
-        }
+        
     }
 }
