@@ -17,10 +17,9 @@ namespace Code
         public float checkRadius;
         public LayerMask checkLayers;
         [SerializeField] private ScreenTouchController input;
-       // [SerializeField] private Shield shield;
+        // [SerializeField] private Shield shield;
         [SerializeField] private ShootController shootController;
-
-      public readonly List<Transform> _enemies = new();
+        public readonly List<Transform> _enemies = new();
         private bool _isShooting;
         public bool isDead;
         Collider targetEnemy;
@@ -48,7 +47,7 @@ namespace Code
         // Use this for initialization
         void Start()
         {
-           shield= GetComponent<Shield>();
+            shield = GetComponent<Shield>();
             //GameObject[] allChidren = this.gameObject.GetComponentsInChildren<GameObject>();
             //foreach (GameObject t in allChidren)
             //{
@@ -56,13 +55,13 @@ namespace Code
             //}
             if (_view.IsMine)
             {
-               
+
                 FindObjectOfType<PlayerFollow>().SetCameraTarget(transform); //player finds the camera
                 FindObjectOfType<SkillController>().SetPlayer(this); //Skill finds the player
- 
+
             }
             input = FindObjectOfType<ScreenTouchController>();
-           // shield = FindObjectOfType<Shield>();
+            // shield = FindObjectOfType<Shield>();
 
             _animator = GetComponent<Animator>();
             _characterController = GetComponent<CharacterController>();
@@ -150,7 +149,7 @@ namespace Code
                     }
                     else
                     {
-                         _animator.SetBool("is_in_air", false);
+                        _animator.SetBool("is_in_air", false);
                         _animator.SetBool("run", move.magnitude > 0);
                     }
                 }
@@ -171,8 +170,8 @@ namespace Code
                     {
                         //targetEnemy = item;
                         // float speed = 100f;
-                        // var look = targetEnemy.transform.position - transform.position;
-                        // look.y = 0;
+                        var look = item.transform.position - transform.position;
+                        look.y = 0;
                         // var targetrotation = Quaternion.LookRotation(targetEnemy.transform.position);
                         // transform.rotation = Quaternion.Lerp(transform.rotation, targetrotation, Time.deltaTime * speed);
                         transform.LookAt(item.transform.position);
@@ -191,11 +190,11 @@ namespace Code
             {
                 if (collision.transform.CompareTag($"Enemy"))
                 {
-                   
+
                     if (!shield.isShield)
                     {
                         Dead();
-                    }                   
+                    }
                 }
             }
         }
@@ -245,7 +244,7 @@ namespace Code
                             }
                         }
                     }
-                    
+
                     _enemies.RemoveAt(0);
                     yield return new WaitForSeconds(shootController.Delay);
                 }
@@ -278,6 +277,6 @@ namespace Code
         {
             GameManager.Instance.Win();
         }
-        
+
     }
 }

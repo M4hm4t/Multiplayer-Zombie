@@ -5,7 +5,7 @@ using Code;
 
 public class ForceAttack : MonoBehaviour
 {
-    private SkillController skillController;
+    private ForceAttackOnPlayer skillController;
     PlayerController enemy;
     // Vector3 start = Vector3.zero;
     public Vector3 end = new Vector3(7, 7, 7);
@@ -39,7 +39,7 @@ public class ForceAttack : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    public void SetSkillController(SkillController skillController)
+    public void SetSkillController(ForceAttackOnPlayer skillController)
     {
 
         this.skillController = skillController;

@@ -21,7 +21,9 @@ public class SpawnPlayers : MonoBehaviourPunCallbacks
     }
     void SpawnPlayer()
     {
-        GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, spawnPoint.position, spawnPoint.rotation);
+        var newSpawnPos = spawnPoint.position + Random.onUnitSphere * 3;
+        newSpawnPos.y = spawnPoint.position.y;
+        GameObject player = PhotonNetwork.Instantiate(playerPrefab.name, newSpawnPos, spawnPoint.rotation);
        // playerFollow.SetCameraTarget(player.transform);
     }
 

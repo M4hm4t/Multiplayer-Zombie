@@ -12,14 +12,16 @@ namespace Code
 
         [SerializeField] private ParticleController deadParticlePrefab;
 
-        private void Start()
+        void Start()
         {
-
+            Enemy();
             GameManager.Instance.EnemyAmount++;
         }
 
-        private void FixedUpdate()
+        public void Enemy() // enemies finds the Player
         {
+         
+            Invoke("Enemy", 1);
             var hits = Physics.OverlapSphere(transform.position, 40f);
 
             foreach (var hit in hits)
@@ -41,19 +43,26 @@ namespace Code
             {
                 return;
             }
-            var delta = -transform.position + player.transform.position;
-            delta.y = 0;
-            var direction = delta.normalized;
-            Move(direction);
-            transform.LookAt(player.transform);
+
         }
 
+        void FixedUpdate()
+        {
+            if (player != null)
+            {
+                var delta = -transform.position + player.transform.position;
+                delta.y = 0;
+                var direction = delta.normalized;
+                Move(direction);
+                transform.LookAt(player.transform);
+            }
+        }
         private void OnTriggerEnter(Collider other)
         {
 
             if (other.transform.CompareTag($"Bullet"))
             {
-            other.gameObject.SetActive(false);
+                other.gameObject.SetActive(false);
                 GetHit();
             }
         }

@@ -32,7 +32,10 @@ public class MatchManager : MonoBehaviourPunCallbacks
     } //singelton
 
 
-  
+    private void Start()
+    {
+        SetEnemies();
+    }
 
     [PunRPC]
     public void Display(float normalized)
@@ -46,7 +49,18 @@ public class MatchManager : MonoBehaviourPunCallbacks
             GetComponent<PhotonView>().RPC("Display", RpcTarget.AllBuffered, normalized);
         }
     }
-
+    public void SetEnemies()
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            Enemies();
+        }
+    }
+    [PunRPC]
+    public void Enemies()
+    {
+        var enemies = PhotonNetwork.Instantiate("Enemies", Vector3.zero, Quaternion.identity);// resorstan enemiyi herkes icin al?r
+    }
     public override void OnLeftRoom()
     {
         
