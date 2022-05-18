@@ -9,12 +9,18 @@ namespace Code
     public class EnemyController : MyCharacterController
     {
         PlayerController player;
+        PhotonView view;
 
         [SerializeField] private ParticleController deadParticlePrefab;
 
         void Start()
         {
-            Enemy();
+            view = GetComponent<PhotonView>();
+            if (view.IsMine)
+            {
+                Enemy();
+            }
+            
             GameManager.Instance.EnemyAmount++;
         }
 
@@ -48,7 +54,7 @@ namespace Code
 
         void FixedUpdate()
         {
-            if (player != null)
+            if (player != null && view.IsMine)
             {
                 var delta = -transform.position + player.transform.position;
                 delta.y = 0;
@@ -57,6 +63,8 @@ namespace Code
                 transform.LookAt(player.transform);
             }
         }
+
+      
         private void OnTriggerEnter(Collider other)
         {
 
@@ -66,13 +74,21 @@ namespace Code
                 GetHit();
             }
         }
-
-        public void GetHit()
+        [PunRPC]
+        public void SetHit()
         {
             gameObject.SetActive(false);
             MatchManager.Instance.SetEnemyKill();
             Instantiate(deadParticlePrefab, transform.position, Quaternion.identity);
             GameManager.Instance.EnemyDeadCounter++;
+            PhotonNetwork.Destroy(gameObject);
+        }
+        public void GetHit()
+        {
+            if (view.IsMine)
+            {
+                view.RPC("SetHit",RpcTarget.All);
+            }
         }
     }
 }

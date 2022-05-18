@@ -11,7 +11,8 @@ public class MatchManager : MonoBehaviourPunCallbacks
     private static MatchManager instance;
     private int _enemyKillCount;
     private Player masterClientPlayer;
-  
+
+
 
     public static MatchManager Instance
     {
@@ -34,6 +35,7 @@ public class MatchManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+
         SetEnemies();
     }
 
@@ -53,21 +55,27 @@ public class MatchManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.IsMasterClient)
         {
+            Debug.Log("Enemy");
             Enemies();
         }
     }
     [PunRPC]
     public void Enemies()
     {
-        var enemies = PhotonNetwork.Instantiate("Enemies", Vector3.zero, Quaternion.identity);// resorstan enemiyi herkes icin al?r
+        for (int i = 0; i < 30; i++)
+        {
+            var pos = Random.insideUnitSphere * 30;
+            pos.y = 1;
+            var enemies = PhotonNetwork.InstantiateRoomObject("Enemy", pos, Quaternion.identity);// resorstan enemiyi herkes icin al?r
+        }
     }
     public override void OnLeftRoom()
     {
-        
-       SceneManager.LoadScene("Lobby");
+
+        SceneManager.LoadScene("Lobby");
     }
 
-    
+
     [PunRPC]
     public void EnemyKill(int enemyKillCount)
     {
