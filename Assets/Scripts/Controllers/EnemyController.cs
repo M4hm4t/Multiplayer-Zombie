@@ -81,13 +81,15 @@ namespace Code
             MatchManager.Instance.SetEnemyKill();
             Instantiate(deadParticlePrefab, transform.position, Quaternion.identity);
             GameManager.Instance.EnemyDeadCounter++;
-            PhotonNetwork.Destroy(gameObject);
+          
+          
         }
         public void GetHit()
         {
-            if (view.IsMine)
+            if (view.IsMine&& PhotonNetwork.IsMasterClient)
             {
                 view.RPC("SetHit",RpcTarget.All);
+                PhotonNetwork.Destroy(gameObject);
             }
         }
     }
