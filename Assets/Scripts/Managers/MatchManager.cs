@@ -62,9 +62,11 @@ public class MatchManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void Enemies()
     {
+        var RefPos = GameObject.Find("SpawnEnemiesPosition").transform.position;
+
         for (int i = 0; i < 30; i++)
         {
-            var pos = Random.insideUnitSphere * 30;
+            var pos = RefPos+Random.insideUnitSphere * 30;
             pos.y = 1;
             var enemies = PhotonNetwork.InstantiateRoomObject("Enemy", pos, Quaternion.identity);// resorstan enemiyi herkes icin al?r
         }
